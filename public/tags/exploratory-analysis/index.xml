@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Exploratory Analysis on Personal Website</title>
+    <link>/tags/exploratory-analysis/</link>
+    <description>Recent content in Exploratory Analysis on Personal Website</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <copyright>&amp;copy; 2018. All rights reserved.</copyright>
+    <lastBuildDate>Fri, 05 Oct 2018 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="/tags/exploratory-analysis/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Effect of drug treatment on cellular metabolism (targeted LC/MS metabolomics analysis)</title>
+      <link>/post/effect-of-drug-treatment-on-cellular-metabolism-targeted-lc-ms-metabolomics-analysis/</link>
+      <pubDate>Fri, 05 Oct 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/post/effect-of-drug-treatment-on-cellular-metabolism-targeted-lc-ms-metabolomics-analysis/</guid>
+      <description>SetupPackages:Data:Abundances:Compounds:Functions:Exploratory AnalysisNA per sample and per compoundEmpty/Solv vs Sample FilesCell / NegCell / PosMedia / NegMedia / PosData prep and prelim analysisNA replacement and log transformDistribution plots:Exploratory PCAStatistical analysisVPA metabolismSignifiance Testing using LimmaCells / Neg ModeMedia / Neg ModeCells / Pos ModeMedia / Pos ModePathway analysisSetupPackages:library(tidyverse)library(cowplot)library(GGally)library(heatmaply)library(sva)library(limma)library(biobroom)library(ggridges)Data:Abundances:# Cells #cell.</description>
+    </item>
+    
+  </channel>
+</rss>

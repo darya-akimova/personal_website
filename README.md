@@ -1,1 +1,2 @@
-# personal_website
+# phosphofructo.github.io
+Personal website
