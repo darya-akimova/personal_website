@@ -18,7 +18,7 @@
       <pubDate>Fri, 05 Oct 2018 00:00:00 +0000</pubDate>
       
       <guid>/post/effect-of-drug-treatment-on-cellular-metabolism-targeted-lc-ms-metabolomics-analysis/</guid>
-      <description>SetupPackages:Data:Abundances:Compounds:Functions:Exploratory AnalysisNA per sample and per compoundEmpty/Solv vs Sample FilesCell / NegCell / PosMedia / NegMedia / PosData prep and prelim analysisNA replacement and log transformDistribution plots:Exploratory PCAStatistical analysisVPA metabolismSignifiance Testing using LimmaCells / Neg ModeMedia / Neg ModeCells / Pos ModeMedia / Pos ModePathway analysisSetupPackages:library(tidyverse)library(cowplot)library(GGally)library(heatmaply)library(sva)library(limma)library(biobroom)library(ggridges)Data:Abundances:# Cells #cell.</description>
+      <description>IntroductionSetupPackages:Data:Abundances:Compounds:Functions:Exploratory AnalysisNA per sample and per compoundEmpty/Solv vs Sample FilesCell / NegCell / PosMedia / NegMedia / PosData prep and prelim analysisNA replacement and log transformDistribution plots:Exploratory PCAStatistical analysisVPA metabolismSignifiance Testing using LimmaCells / Neg ModeMedia / Neg ModeCells / Pos ModeMedia / Pos ModePathway analysisIntroductionThis project is a walkthrough of a metabolomics analysis project that involves:</description>
     </item>
     
   </channel>

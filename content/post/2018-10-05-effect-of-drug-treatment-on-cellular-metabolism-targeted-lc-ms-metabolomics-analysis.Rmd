@@ -21,7 +21,25 @@ output:
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 ```
 
+# Introduction
 
+This project is a walkthrough of a metabolomics analysis project that involves:
+
+* Exploratory data anaysis - evaluation distribtuions, missing values, data structure
+* Surrogate variable analysis using the `sva` package, in order to detect and account for batch unexpected batch effects
+* Linear regression on a categorial variable and on surrogate variables identified by the `sva` package, followed by statistical significance analysis, all using the `limma` package
+* Visualization of data cleaned of surrogate variables
+* Some pathway analysis and interetation of significant features 
+
+The setup section inovlves the improting of packages, data, and the functions that will be used throughout this analysis, and can be skipped using the table of contents above.
+
+This experiment involves the LC/MS small molecule analysis of cells treated with a particular drug. In this experiment, the cells themselves, and the media that they were grown in, were run through a mass spectrometer. A house database with was applied to the raw data files using a program known as Agilent Profinder in order to extract the abundances of about 100-150 tentatively identified metabolites. 
+
+There are open source options for this step, such as the package `xcms`, but in my lab, since we have access to Profinder, that tends to be the software of choice. 
+
+As a brief intro to LC/MS analysis, the LC portion is a method of separating compounds out over time, which gives some information about the structure and the nature of the compound, and also ensures that all compounds do not hit the detector at once and overwhelm the system. Mass spectrometers are very sensitive instruments and if too many compounds are sent in to the instument at once, the abunance readings would be highl inaccurate.
+
+Another thing that will pop up throughout this, is the idea of "positive" and "negative" mode. This has to do with how the instrument detects molecules. Mass spectrometers can only detect and measure charged molecules, but molecules can have either positive or negative charges. Negative mode simply means that the instrument only detects and measures negatively charged molecules, while positive mode is for positively-charged molecules. Some molecules can be measured in either mode, and the data from both positive and negative mode can be used a corroborative evidence. But some molecules can only be detected in one mode or the other. Methodology can vary from lab to lab, but my lab usually runs each sample at least twice, once for each MS mode.  
 
 # Setup
 
@@ -38,10 +56,18 @@ library(biobroom)
 library(ggridges)
 ```
 
-
 ## Data:
 
 ### Abundances:
+
+There are four data files associated with this analysis:
+
+* Readings from the cells in negative MS mode
+* Readings from the cells in positive MS mode
+* Readings from the media that the cells were grown in negative MS mode
+* Readings from the media in positive MS mode
+
+In general, the media tends to be less useful 
 
 ```{r abundance_import, comment=NA}
 # Cells #
