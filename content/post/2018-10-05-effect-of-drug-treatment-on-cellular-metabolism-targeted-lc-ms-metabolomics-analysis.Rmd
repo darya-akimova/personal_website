@@ -26,16 +26,17 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 This project is a walkthrough of a metabolomics analysis project that involves:
 
 * Exploratory data anaysis - evaluation distribtuions, missing values, data structure
-* Surrogate variable analysis using the `sva` package, in order to detect and account for batch unexpected batch effects
+* Surrogate variable analysis using the `sva` package, in order to detect and account for unexpected batch effects
 * Linear regression on a categorial variable and on surrogate variables identified by the `sva` package, followed by statistical significance analysis, all using the `limma` package
-* Visualization of data cleaned of surrogate variables
+* Visualization of data cleaned of surrogate variables (residuals)
 * Some pathway analysis and interetation of significant features 
 
-The setup section inovlves the improting of packages, data, and the functions that will be used throughout this analysis, and can be skipped using the table of contents above.
+The setup section inovlves the importing of packages, data, and the functions that will be used throughout this analysis. This section can be skipped using the table of contents above.
 
-This experiment involves the LC/MS small molecule analysis of cells treated with a particular drug. In this experiment, the cells themselves, and the media that they were grown in, were run through a mass spectrometer. A house database with was applied to the raw data files using a program known as Agilent Profinder in order to extract the abundances of about 100-150 tentatively identified metabolites. 
+The following document is an example of my typical analysis procedure of LC/MS small molecule metabolomics data. I don't want to get too bogged down in the technical details of the experiment. The most important details to know is that these datasets are comporised of samples collected from cells I had grown and had treated half with a drug, and half was not treated. There's also two datasets because each sample was analyzed twice, once for each intrument mode (positive and negative). This is necessary because each instrument mode is better at detecting certain classes of compounds/chemicals than others, although some compounds can be detected in both. One can take advantage of this as a method of confirmation.
 
-There are open source options for this step, such as the package `xcms`, but in my lab, since we have access to Profinder, that tends to be the software of choice. 
+
+A house database with was applied to the raw data files using a program known as Agilent Profinder in order to extract the abundances of about 100-150 tentatively identified metabolites. There are open source options for this step, such as the package `xcms`, but in my lab, since we have access to Profinder, that tends to be the software of choice. 
 
 As a brief intro to LC/MS analysis, the LC portion is a method of separating compounds out over time, which gives some information about the structure and the nature of the compound, and also ensures that all compounds do not hit the detector at once and overwhelm the system. Mass spectrometers are very sensitive instruments and if too many compounds are sent in to the instument at once, the abunance readings would be highl inaccurate.
 
@@ -60,33 +61,17 @@ library(ggridges)
 
 ### Abundances:
 
-There are four data files associated with this analysis:
+There are two data files associated with this analysis:
 
 * Readings from the cells in negative MS mode
 * Readings from the cells in positive MS mode
-* Readings from the media that the cells were grown in negative MS mode
-* Readings from the media in positive MS mode
 
 In general, the media tends to be less useful 
 
-```{r abundance_import, comment=NA}
-# Cells #
-cell.neg.raw <- read_csv("./data/cells_target_negmode.csv")
-cell.pos.raw <- read_csv("./data/cells_target_posmode.csv")
-# Media #
-med.neg.raw <- read_csv("./data/media_target_negmode.csv")
-med.pos.raw <- read_csv("./data/media_target_posmode.csv")
-```
-
-### Compounds:
-
-```{r compound_info_import, comment=NA, eval = FALSE}
-# Cells #
-cell.neg.compound.info <- read_csv("./data/cells_target_negmode_cmpnd_info.csv")
-cell.pos.compound.info <- read_csv("./data/cells_target_posmode_cmpnd_info.csv")
-# Media #
-med.neg.compound.info <- read_csv("./data/media_target_negmode_cmpnd_info.csv")
-med.pos.compound.info <- read_csv("./data/media_target_posmode_cmpnd_info.csv")
+```{r import, comment=NA}
+# compound abundances #
+neg.raw <- read_csv("./data/cells_target_negmode.csv")
+pos.raw <- read_csv("./data/cells_target_posmode.csv")
 # Kegg/other ID reference #
 cmpnd.id.db <- read_csv("./data/anp_db_compound_kegg.csv")
 ```
@@ -113,19 +98,6 @@ ReplaceNAwMinLogTransform <- function(raw.dataframe, start.prefix) {
       smpls %>%
         replace_na(replace = smpls.min) %>% 
         log2()
-      ) 
-  # replace missing QC values with values within the QC groups
-  QC <- raw.dataframe %>%
-    filter(Group == "QC") %>% 
-    dplyr::select(starts_with(start.prefix))
-  QC.min <- lapply(QC, min, na.rm = TRUE)
-  QC.noNA <- raw.dataframe  %>%
-    filter(Group == "QC") %>% 
-    dplyr::select(Samples:Experiment) %>%
-    bind_cols(
-      QC %>%
-        replace_na(replace = QC.min) %>% 
-        log2()
       )
   # replace the missing values in solv and empty samples with 1 - for PCA analysis
   # then take the log
@@ -149,13 +121,15 @@ ReplaceNAwMinLogTransform <- function(raw.dataframe, start.prefix) {
       )
   # combine them together back into one data frame
   all.noNA <- smpls.noNA %>% 
-    bind_rows(QC.noNA) %>% 
     bind_rows(other.num.log)
-  # for the vpa + fa combined expriment because the columns are different? I think
-
 }
 
 MissingPerSamplePlot <- function(raw.data, start.string) {
+  # Counts the number of missing/NA values per sample and
+  # percent compounds missing out of total number of compounds per sample
+  # Then passes the result into a vertical bar plot, where each 
+  # bar represents a single sample and the size of the bar 
+  # is the % of compounds missing
   counted.na <- raw.data %>%
   select(starts_with(start.string)) %>% 
   mutate(
@@ -178,8 +152,10 @@ counted.na %>%
   ylab("Percent missing values in sample") +
   theme(axis.text.y = element_text(size = 6)) 
 }
-
 MissingPerCompound <- function(raw.data, start.string){
+  # Function to count in how many sample each compound is missing
+  # Also calculates the % missing:
+  # (num of samples per compound) * 100 / (tot num of samples)
   raw.data %>% 
   filter(Group == "sample") %>% 
   select(Samples, starts_with(start.string)) %>% 
@@ -227,14 +203,10 @@ HeatmapPrepAlt <- function(raw.data, start.prefix){
 Q: Do any of the cell or media samples have greater than 20% compound abundances missing (NA)?
 
 ```{r missing_per_sample_plots, comment=NA}
-MissingPerSamplePlot(cell.neg.raw, "ANPnC") +
-  ggtitle("Missing Per Sample\nPost Drug Treatment\nCells / Neg Mode")
-MissingPerSamplePlot(cell.pos.raw, "ANPpC") +
-  ggtitle("Missing Per Sample\nPost Drug Treatment\nCells / Pos Mode")
-MissingPerSamplePlot(med.neg.raw, "ANPnM") +
-  ggtitle("Missing Per Sample\nPost Drug Treatment\nMedia / Neg Mode")
-MissingPerSamplePlot(med.pos.raw, "ANPpM") +
-  ggtitle("Missing Per Sample\nPost Drug Treatment\nMedia / Pos Mode")
+MissingPerSamplePlot(neg.raw, "ANPnC") +
+  ggtitle("Missing Per Sample\nPost Drug Treatment\nNeg Mode")
+MissingPerSamplePlot(pos.raw, "ANPpC") +
+  ggtitle("Missing Per Sample\nPost Drug Treatment\nPos Mode")
 ```
 
 A: No, sample files across all 4 datasets have bery few missing compound abundances. The solvent and "empty" media samples have greater than 20% missing compounds, but that's not an issue for the actual analysis itself.
@@ -248,59 +220,77 @@ Note: The `MissingPerCompound` function considers only the `Group == "sample"` s
 
 ```{r percent_missing_per_compound}
 ## Missing per Compound ## 
-MissingPerCompound(cell.neg.raw, "ANPnC") %>% 
+MissingPerCompound(neg.raw, "ANPnC") %>% 
   filter(percent_na > 20)
-(cell.pos.cmpnd.to.excl <- MissingPerCompound(cell.pos.raw, "ANPpC") %>% 
-  filter(percent_na > 20))
-MissingPerCompound(med.neg.raw, "ANPnM") %>% 
-  filter(percent_na > 20)
-(med.pos.cmpnd.to.excl <- MissingPerCompound(med.pos.raw, "ANPpM") %>% 
+(pos.cmpnd.to.excl <- MissingPerCompound(pos.raw, "ANPpC") %>% 
   filter(percent_na > 20))
 ```
 
-A: No compounds need to be excluded from the Cell / Neg Mode and Media / Neg Mode datasets, but 1 compound each will be excluded from the Cell / Pos Mode and Media / Pos Mode datasets. 
-
+A: No compounds need to be excluded from the Neg Mode dataset, but 1 compound will be excluded from the Pos Mode dataset. 
 
 
 ## Empty/Solv vs Sample Files
 
+### Background
 
-### Cell / Neg
+Good experimental design often involves including certain types of samples known as negative and positive controls. Positive controls, samples where you know for sure that your target or whatever you're measuring is present, are a verification that your technique or instrument are able to detect and/or quantify your target correctly. Negative controls, on the other hand, are used to make sure that the signal of interest is real and not an artifact of the method. 
+
+In the case of this analysis, there are no positive controls, but there are two sets of negative controls: 
+
+* `solv`: These are "solvent" samples - samples of just the chemical solvent that the biological samples are dissolved in for analysis. Any compounds detected in these samples are probably artifacts from experimental tools themselves, the sample vials or plastic pipettes for example.
+* `empty`: This group of samples are derived by treating tissue culture wells the same as the experimental cell samples, but these had no actual cells grown in them. These samples are a control for the sample washing and preparation process. Cells are typically grown in very nutrient-rich liquid broth/media that is hard to get rid of completely. If any compound is present in high abundance in these samples, it may represent technical variation that can obscure biological variation.
+
+### Negative Mode
 
 
 ```{r empty_solv_cell_neg}
-cell.neg.raw.grp.mean <- cell.neg.raw %>% 
+neg.raw.grp.mean <- neg.raw %>% 
   group_by(Group) %>% 
   summarize_at(vars(matches("ANPnC")), mean, na.rm = TRUE) %>% 
   gather(key = "Compound", value = "Grp_mean_abun", -Group)
-cell.neg.raw.grp.mean %>% 
+neg.raw.grp.mean %>% 
   ggplot(aes(log2(Grp_mean_abun), color = Group)) +
   geom_density(size = 2, alpha = 0.8)
-cell.neg.raw.grp.mean.order <- cell.neg.raw.grp.mean %>% 
+neg.raw.grp.mean.order <- neg.raw.grp.mean %>% 
   filter(Group == "sample") %>% 
   arrange(Grp_mean_abun)
-cell.neg.raw.grp.mean %>% 
-  mutate(Cmpnd_sort = factor(Compound, levels = cell.neg.raw.grp.mean.order$Compound)) %>% 
+neg.raw %>% 
+  select(Samples, Group, starts_with("ANPnC")) %>% 
+  gather("Compound", value = "Abundance", -c(Samples, Group)) %>% 
+  mutate(Cmpnd_sort = factor(Compound, levels = neg.raw.grp.mean.order$Compound)) %>% 
+  ggplot(aes(Cmpnd_sort, log2(Abundance), color = Group, group = Samples)) + 
+  geom_line(alpha = 0.25, size = 1) + 
+  #geom_point(size = 1, alpha = 0.8)
+  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
+  xlab("Compound") +
+  geom_line(
+    data = neg.raw.grp.mean %>% 
+      mutate(Cmpnd_sort = factor(Compound, levels = neg.raw.grp.mean.order$Compound)), 
+    aes(Cmpnd_sort, log2(Grp_mean_abun), color = Group, group = Group),
+    size = 1
+    )
+neg.raw.grp.mean %>% 
+  mutate(Cmpnd_sort = factor(Compound, levels = neg.raw.grp.mean.order$Compound)) %>% 
   ggplot(aes(Cmpnd_sort, log2(Grp_mean_abun), color = Group, group = Group)) +
   geom_point(size = 1, alpha = 0.8) +
   geom_line(alpha = 0.8) +
   theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
   xlab("Compound") +
   ylab("log2(Sample Type Mean)")
-cell.neg.raw.grp.diff <- cell.neg.raw.grp.mean %>% 
+neg.raw.grp.diff <- neg.raw.grp.mean %>% 
   spread(Group, Grp_mean_abun) %>% 
   mutate(
     smpl_empty_diff = sample / empty,
     smpl_solv_diff = sample / solv,
     empty_solv_diff = empty / solv
     )
-cell.neg.raw.grp.diff %>% 
+neg.raw.grp.diff %>% 
   ggplot(aes(log2(smpl_empty_diff))) +
   geom_histogram(bins = 50)
-cell.neg.raw.grp.diff %>% 
+neg.raw.grp.diff %>% 
   ggplot(aes(log2(smpl_solv_diff))) +
   geom_histogram(bins = 50)
-cell.neg.raw.grp.diff %>% 
+neg.raw.grp.diff %>% 
   ggplot(aes(log2(smpl_empty_diff), log2(smpl_solv_diff))) +
   geom_point(size = 2, alpha = 0.5) +
   xlim(-3, 13.5) +
@@ -313,48 +303,53 @@ cell.neg.raw.grp.diff %>%
   ylab("log2([Sample Compound Mean] / [Solvent Compound Mean])") +
   ggtitle("Background signal\nRaw Data / Cells / Neg Mode")
 # include compounds with FC > 2.5 or FC is NA (indication of NA in solv or empty)
-cell.neg.cmpnd.to.incl <- cell.neg.raw.grp.diff %>% 
+neg.cmpnd.to.incl <- neg.raw.grp.diff %>% 
   filter((smpl_solv_diff > 2.5 & smpl_empty_diff > 2.5) | is.na(smpl_solv_diff) | is.na(smpl_empty_diff))
-nrow(cell.neg.cmpnd.to.incl)
+nrow(neg.raw.grp.diff)
+nrow(neg.cmpnd.to.incl)
 ```
 
+In the end, 179 out of the 211 features will be included in the final analysis.
 
-### Cell / Pos
+
+### Positive Mode
+
+The same procedure as above can be applied to the positive mode data, but I'm only going to show the results because the code is redundant.
 
 
-```{r empty_solv_cell_pos}
-cell.pos.raw.grp.mean <- cell.pos.raw %>% 
+```{r empty_solv_cell_pos, comment=NA, echo=FALSE}
+pos.raw.grp.mean <- pos.raw %>% 
   group_by(Group) %>% 
   summarize_at(vars(matches("ANPpC")), mean, na.rm = TRUE) %>% 
   gather(key = "Compound", value = "Grp_mean_abun", -Group)
-cell.pos.raw.grp.mean %>% 
+pos.raw.grp.mean %>% 
   ggplot(aes(log2(Grp_mean_abun), color = Group)) +
   geom_density(size = 2, alpha = 0.8)
-cell.pos.raw.grp.mean.order <- cell.pos.raw.grp.mean %>% 
+pos.raw.grp.mean.order <- pos.raw.grp.mean %>% 
   filter(Group == "sample") %>% 
   arrange(Grp_mean_abun)
-cell.pos.raw.grp.mean %>% 
-  mutate(Cmpnd_sort = factor(Compound, levels = cell.pos.raw.grp.mean.order$Compound)) %>% 
+pos.raw.grp.mean %>% 
+  mutate(Cmpnd_sort = factor(Compound, levels = pos.raw.grp.mean.order$Compound)) %>% 
   ggplot(aes(Cmpnd_sort, log2(Grp_mean_abun), color = Group, group = Group)) +
   geom_point(size = 1, alpha = 0.8) +
   geom_line(alpha = 0.8) +
   theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
   xlab("Compound") +
   ylab("log2(Sample Type Mean)")
-cell.pos.raw.grp.diff <- cell.pos.raw.grp.mean %>% 
+pos.raw.grp.diff <- pos.raw.grp.mean %>% 
   spread(Group, Grp_mean_abun) %>% 
   mutate(
     smpl_empty_diff = sample / empty,
     smpl_solv_diff = sample / solv,
     empty_solv_diff = empty / solv
     )
-cell.pos.raw.grp.diff %>% 
+pos.raw.grp.diff %>% 
   ggplot(aes(log2(smpl_empty_diff))) +
   geom_histogram(bins = 50)
-cell.pos.raw.grp.diff %>% 
+pos.raw.grp.diff %>% 
   ggplot(aes(log2(smpl_solv_diff))) +
   geom_histogram(bins = 50)
-cell.pos.raw.grp.diff %>% 
+pos.raw.grp.diff %>% 
   ggplot(aes(log2(smpl_empty_diff), log2(smpl_solv_diff))) +
   geom_point(size = 2, alpha = 0.5) +
   xlim(-1, 15) +
@@ -365,205 +360,152 @@ cell.pos.raw.grp.diff %>%
   ylab("log2([Sample Compound Mean] / [Solvent Compound Mean])") +
   ggtitle("Background signal\nRaw Data / Cells / Pos Mode")
 # include compounds with FC > 2.5 or FC is NA (indication of NA in solv or empty)
-cell.pos.cmpnd.to.incl <- cell.pos.raw.grp.diff %>% 
+pos.cmpnd.to.incl <- pos.raw.grp.diff %>% 
   filter((smpl_solv_diff > 2.5 & smpl_empty_diff > 2.5) | is.na(smpl_solv_diff) | is.na(smpl_empty_diff)) %>% 
-  filter(!(Compound %in% cell.pos.cmpnd.to.excl$Compound))
-nrow(cell.pos.raw.grp.diff)
-nrow(cell.pos.cmpnd.to.incl)
-```
-
-
-### Media / Neg
-
-
-```{r empty_solv_media_neg}
-med.neg.raw.grp.mean <- med.neg.raw %>% 
-  group_by(Group) %>% 
-  summarize_at(vars(matches("ANPnM")), mean, na.rm = TRUE) %>% 
-  gather(key = "Compound", value = "Grp_mean_abun", -Group)
-med.neg.raw.grp.mean %>% 
-  ggplot(aes(log2(Grp_mean_abun), color = Group)) +
-  geom_density(size = 2, alpha = 0.8)
-med.neg.raw.grp.mean.order <- med.neg.raw.grp.mean %>% 
-  filter(Group == "empty") %>% 
-  arrange(Grp_mean_abun)
-med.neg.raw.grp.mean %>% 
-  mutate(Cmpnd_sort = factor(Compound, levels = med.neg.raw.grp.mean.order$Compound)) %>% 
-  ggplot(aes(Cmpnd_sort, log2(Grp_mean_abun), color = Group, group = Group)) +
-  geom_point(size = 1, alpha = 0.8) +
-  geom_line(alpha = 0.8) +
-  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
-  xlab("Compound") +
-  ylab("log2(Sample Type Mean)")
-med.neg.raw.grp.diff <- med.neg.raw.grp.mean %>% 
-  spread(Group, Grp_mean_abun) %>% 
-  mutate(
-    smpl_empty_diff = sample / empty,
-    smpl_solv_diff = sample / solv,
-    empty_solv_diff = empty / solv
-    )
-med.neg.raw.grp.diff %>% 
-  ggplot(aes(log2(smpl_empty_diff))) +
-  geom_histogram(bins = 25)
-med.neg.raw.grp.diff %>% 
-  ggplot(aes(log2(smpl_solv_diff))) +
-  geom_histogram(bins = 25)
-med.neg.raw.grp.diff %>% 
-  ggplot(aes(log2(smpl_empty_diff), log2(smpl_solv_diff))) +
-  geom_point(size = 2, alpha = 0.5) +
-  xlim(-4, 4) +
-  ylim(-1, 4) +
-  # abline in pink
-  geom_abline(intercept = 0, slope = 1, color =  "#CC79A7", size = 2, alpha = 0.6) +
-  # lm line in green
-  geom_smooth(method = "lm", color = "#009E73", size = 2, alpha = 0.6, se = FALSE) +
-  xlab("log2([Sample Compound Mean] / [Empty Compound Mean])") +
-  ylab("log2([Sample Compound Mean] / [Solvent Compound Mean])") +
-  ggtitle("Background signal\nRaw Data / Media / Neg Mode")
-# include compounds with FC > 2.5 or FC is NA (indication of NA in solv)
-med.neg.cmpnd.to.incl <- med.neg.raw.grp.diff %>% 
-  filter(smpl_solv_diff > 2.5 | is.na(smpl_solv_diff))
-nrow(med.neg.raw.grp.diff)
-nrow(med.neg.cmpnd.to.incl)
-```
-
-
-### Media / Pos
-
-
-```{r empty_solv_media_pos}
-med.pos.raw.grp.mean <- med.pos.raw %>% 
-  group_by(Group) %>% 
-  summarize_at(vars(matches("ANPpM")), mean, na.rm = TRUE) %>% 
-  gather(key = "Compound", value = "Grp_mean_abun", -Group)
-med.pos.raw.grp.mean %>% 
-  ggplot(aes(log2(Grp_mean_abun), color = Group)) +
-  geom_density(size = 2, alpha = 0.8)
-med.pos.raw.grp.mean.order <- med.pos.raw.grp.mean %>% 
-  filter(Group == "empty") %>% 
-  arrange(Grp_mean_abun)
-med.pos.raw.grp.mean %>% 
-  mutate(Cmpnd_sort = factor(Compound, levels = med.pos.raw.grp.mean.order$Compound)) %>% 
-  ggplot(aes(Cmpnd_sort, log2(Grp_mean_abun), color = Group, group = Group)) +
-  geom_point(size = 1, alpha = 0.8) +
-  geom_line(alpha = 0.8) +
-  theme(axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
-  xlab("Compound") +
-  ylab("log2(Sample Type Mean)")
-med.pos.raw.grp.diff <- med.pos.raw.grp.mean %>% 
-  spread(Group, Grp_mean_abun) %>% 
-  mutate(
-    smpl_empty_diff = sample / empty,
-    smpl_solv_diff = sample / solv,
-    empty_solv_diff = empty / solv
-    )
-med.pos.raw.grp.diff %>% 
-  ggplot(aes(log2(smpl_empty_diff))) +
-  geom_histogram(bins = 25)
-med.pos.raw.grp.diff %>% 
-  ggplot(aes(log2(smpl_solv_diff))) +
-  geom_histogram(bins = 25)
-med.pos.raw.grp.diff %>% 
-  ggplot(aes(log2(smpl_empty_diff), log2(smpl_solv_diff))) +
-  geom_point(size = 2, alpha = 0.5) +
-  xlim(-6, 2) +
-  ylim(-1, 7) +
-  # abline in pink
-  geom_abline(intercept = 0, slope = 1, color =  "#CC79A7", size = 2, alpha = 0.6) +
-  # lm line in green
-  geom_smooth(method = "lm", color = "#009E73", size = 2, alpha = 0.6, se = FALSE) +
-  xlab("log2([Sample Compound Mean] / [Empty Compound Mean])") +
-  ylab("log2([Sample Compound Mean] / [Solvent Compound Mean])") +
-  ggtitle("Background signal\nRaw Data / Media / pos Mode")
-# include compounds with FC > 2.5 or FC is NA (indication of NA in solv)
-med.pos.cmpnd.to.incl <- med.pos.raw.grp.diff %>% 
-  filter(smpl_solv_diff > 2.5 | is.na(smpl_solv_diff)) %>% 
-  filter(!(Compound %in% med.pos.cmpnd.to.excl$Compound))
-nrow(med.pos.raw.grp.diff)
-nrow(med.pos.cmpnd.to.incl)
+  filter(!(Compound %in% pos.cmpnd.to.excl$Compound))
+nrow(pos.raw.grp.diff)
+nrow(pos.cmpnd.to.incl)
 ```
 
 
 # Data prep and prelim analysis
 
+
 ## NA replacement and log transform
+
 
 ```{r min_na_rpl_log_transform, comment=NA}
 # replace missing with minimum for each Group in each dataset and log2() transform the data:
 # exclude compound that have a >20% NA count across samples
-cell.neg.noNA <- cell.neg.raw %>% 
-  select(Samples:Experiment, one_of(cell.neg.cmpnd.to.incl$Compound)) %>% 
+neg.noNA <- neg.raw %>% 
+  select(Samples:Experiment, one_of(neg.cmpnd.to.incl$Compound)) %>% 
   ReplaceNAwMinLogTransform("ANPnC")
-cell.pos.noNA <- cell.pos.raw %>% 
-  select(Samples:Experiment, one_of(cell.pos.cmpnd.to.incl$Compound)) %>% 
+pos.noNA <- pos.raw %>% 
+  select(Samples:Experiment, one_of(pos.cmpnd.to.incl$Compound)) %>% 
   ReplaceNAwMinLogTransform("ANPpC")
-med.neg.noNA <- med.neg.raw %>% 
-  select(Samples:Experiment, one_of(med.neg.cmpnd.to.incl$Compound)) %>% 
-  ReplaceNAwMinLogTransform("ANPnM")
-med.pos.noNA <- med.pos.raw %>% 
-  select(Samples:Experiment, one_of(med.pos.cmpnd.to.incl$Compound)) %>%  
-  ReplaceNAwMinLogTransform("ANPpM")
 ```
 
 
 ## Distribution plots:
 
+### Negative
 
-```{r distribution plots, comment=NA}
-cell.neg.noNA.gathered <- cell.neg.noNA %>% 
+```{r distribution_plots_neg, comment=NA}
+neg.noNA.gathered <- neg.noNA %>% 
   gather(
     key = "Metabolite", "Abundance", 
-    which(colnames(cell.neg.noNA) == "ANPnC1"):ncol(cell.neg.noNA)
+    which(colnames(neg.noNA) == "ANPnC1"):ncol(neg.noNA)
     )
-
-cell.neg.noNA.gathered %>% 
+neg.noNA.gathered %>% 
   ggplot(aes(Samples, Abundance, fill = Group)) +
   geom_boxplot() +
   geom_boxplot(aes(color = Group), fatten = NULL, fill = NA, coef = 0, outlier.alpha = 0, show.legend = FALSE) +
   theme(axis.text.x = element_text(angle = 90))
 
-cell.neg.noNA.gathered %>% 
+neg.noNA.gathered %>% 
   ggplot(aes(Samples, Abundance, fill = Treatment)) +
   geom_boxplot() +
   geom_boxplot(aes(color = Treatment), fatten = NULL, fill = NA, coef = 0, outlier.alpha = 0, show.legend = FALSE) +
   theme(axis.text.x = element_text(angle = 90))
 
-cell.neg.summarized.abun <- cell.neg.noNA.gathered %>% 
+neg.summarized.abun <- neg.noNA.gathered %>% 
   group_by(Samples, Group, Treatment, Plate, Experiment) %>% 
   summarize(
     mean_Abun = mean(Abundance),
     med_Abun = median(Abundance)
     )
-cell.neg.summarized.abun %>% 
+neg.summarized.abun %>% 
   ggplot(aes(mean_Abun)) +
   geom_histogram()
-cell.neg.summarized.abun %>% 
+neg.summarized.abun %>% 
   ggplot(aes(med_Abun)) +
   geom_histogram()
 
-cell.neg.noNA.gathered %>% 
+neg.noNA.gathered %>% 
   ggplot(aes(y = Samples, x = Abundance, fill = Group)) + 
   geom_density_ridges(scale = 20) +
   theme_ridges() +
   scale_y_discrete(expand = c(0.01, 0))
 
-cell.neg.noNA.gathered %>% 
+neg.noNA.gathered %>% 
   ggplot(aes(y = Group, x = Abundance, fill = Group)) + 
   geom_density_ridges(scale = 2.5) +
   theme_ridges() +
   scale_y_discrete(expand = c(0.01, 0))
 
-cell.neg.noNA.gathered %>%
+neg.noNA.gathered %>%
   ggplot(aes(Abundance, group = Samples, color= Group)) +
   geom_density(alpha = 0.8, size = 0.75)
-cell.neg.noNA.gathered %>%
+neg.noNA.gathered %>%
   ggplot(aes(Abundance, group = Samples, color = Group)) +
   geom_density(alpha = 0.8, size = 0.75) +
   facet_wrap(~ Treatment)
-cell.neg.noNA.gathered %>%
+neg.noNA.gathered %>%
   ggplot(aes(Abundance, group = Samples, color = Experiment)) +
   geom_density(alpha = 0.8, size = 0.75)
-cell.neg.noNA.gathered %>%
+neg.noNA.gathered %>%
+  ggplot(aes(Abundance, group = Samples, color = Experiment)) +
+  geom_density(alpha = 0.6, size = 0.75) +
+  facet_wrap(~ Treatment)
+```
+
+
+### Positive
+
+```{r distribution_plots_pos, comment=NA}
+pos.noNA.gathered <- pos.noNA %>% 
+  gather(
+    key = "Metabolite", "Abundance", 
+    which(colnames(pos.noNA) == "ANPpC1"):ncol(pos.noNA)
+    )
+pos.noNA.gathered %>% 
+  ggplot(aes(Samples, Abundance, fill = Group)) +
+  geom_boxplot() +
+  geom_boxplot(aes(color = Group), fatten = NULL, fill = NA, coef = 0, outlier.alpha = 0, show.legend = FALSE) +
+  theme(axis.text.x = element_text(angle = 90))
+
+pos.noNA.gathered %>% 
+  ggplot(aes(Samples, Abundance, fill = Treatment)) +
+  geom_boxplot() +
+  geom_boxplot(aes(color = Treatment), fatten = NULL, fill = NA, coef = 0, outlier.alpha = 0, show.legend = FALSE) +
+  theme(axis.text.x = element_text(angle = 90))
+
+pos.summarized.abun <- pos.noNA.gathered %>% 
+  group_by(Samples, Group, Treatment, Plate, Experiment) %>% 
+  summarize(
+    mean_Abun = mean(Abundance),
+    med_Abun = median(Abundance)
+    )
+pos.summarized.abun %>% 
+  ggplot(aes(mean_Abun)) +
+  geom_histogram()
+pos.summarized.abun %>% 
+  ggplot(aes(med_Abun)) +
+  geom_histogram()
+
+pos.noNA.gathered %>% 
+  ggplot(aes(y = Samples, x = Abundance, fill = Group)) + 
+  geom_density_ridges(scale = 20) +
+  theme_ridges() +
+  scale_y_discrete(expand = c(0.01, 0))
+
+pos.noNA.gathered %>% 
+  ggplot(aes(y = Group, x = Abundance, fill = Group)) + 
+  geom_density_ridges(scale = 2.5) +
+  theme_ridges() +
+  scale_y_discrete(expand = c(0.01, 0))
+
+pos.noNA.gathered %>%
+  ggplot(aes(Abundance, group = Samples, color= Group)) +
+  geom_density(alpha = 0.8, size = 0.75)
+pos.noNA.gathered %>%
+  ggplot(aes(Abundance, group = Samples, color = Group)) +
+  geom_density(alpha = 0.8, size = 0.75) +
+  facet_wrap(~ Treatment)
+pos.noNA.gathered %>%
+  ggplot(aes(Abundance, group = Samples, color = Experiment)) +
+  geom_density(alpha = 0.8, size = 0.75)
+pos.noNA.gathered %>%
   ggplot(aes(Abundance, group = Samples, color = Experiment)) +
   geom_density(alpha = 0.6, size = 0.75) +
   facet_wrap(~ Treatment)
@@ -572,160 +514,154 @@ cell.neg.noNA.gathered %>%
 
 ## Exploratory PCA 
 
-Some plots to understand the relationship between the samples, QC samples, solvent, and empty samples in some cases. 
+### Background
 
-```{r exploratory_pca}
-### VPA Cells Negative Mode ###
-cell.neg.full.pca <- cell.neg.noNA %>% 
+Principal component analysis is a commonly used dimension reduction technique that is often used in "omics" studies to visualize relationships in high dimensional data. There are far more detailed explanations of this machine learning technique available elsewhere, but in brief, it extracts the common variance between compounds across samples and combines the information into new variable, or principal components. In a way, it is a projection of high dimensional data onto a lower-dimensional axis (?). The main idea here, is that many metabolites (or any type of features) are related in some way, and that relationship can be simplified with some loss of information, but at the advantage of ease of visualization. 
+
+### Negative Mode
+
+```{r exploratory_pca_neg, comment=NA}
+# All Samples #
+neg.full.pca <- neg.noNA %>% 
   select(starts_with("ANPnC")) %>% 
+  mutate_all(scale, center = TRUE, scale = FALSE) %>% 
   as.matrix() %>% 
   prcomp()
-cell.neg.full.pca.x <- as.data.frame(cell.neg.full.pca$x)
-row.names(cell.neg.full.pca.x) <- cell.neg.noNA$Samples
-cell.neg.full.pca.x <- cell.neg.full.pca.x %>% 
-  bind_cols(cell.neg.noNA %>% select(Group:Experiment))
-cell.neg.full.pca.x %>% 
+neg.full.pca.x <- as.data.frame(neg.full.pca$x)
+row.names(neg.full.pca.x) <- neg.noNA$Samples
+neg.full.pca.x <- neg.full.pca.x %>% 
+  bind_cols(neg.noNA %>% select(Group:Experiment))
+neg.full.pca.x %>% 
   ggplot(aes(x = PC1, y = PC2, color = Group)) +
-  geom_point(size = 2, alpha = 0.8)
-cell.neg.smpl.qc.pca <- cell.neg.noNA %>% 
-  filter(Group == "sample" | Group == "QC") %>% 
-  select(starts_with("ANPnC")) %>% 
-  as.matrix() %>% 
-  prcomp()
-cell.neg.smpl.qc.pca.x <- as.data.frame(cell.neg.smpl.qc.pca$x)
-cell.neg.smpl.qc.pca.x <- cell.neg.smpl.qc.pca.x %>% 
-  bind_cols(
-    cell.neg.noNA %>% 
-      filter(Group == "sample" | Group == "QC") %>% 
-      select(Samples, Group:Experiment)
-  )
-row.names(cell.neg.smpl.qc.pca.x) <- cell.neg.smpl.qc.pca.x$Samples
-cell.neg.smpl.qc.pca.x %>% 
-  ggplot(aes(x = PC1, y = PC2, shape = Group, color = Treatment)) +
-  geom_point(size = 4, alpha = 0.8)
+  geom_point(size = 2, alpha = 0.8) +
+  xlab("PC1 (89.9% Var)") +
+  ylab("PC2 (3.5%)")
 
-### just cells ###
-cell.neg.smpl.pca <- cell.neg.noNA %>% 
+# Experimental Samples Only #
+neg.smpl.pca <- neg.noNA %>% 
   filter(Group == "sample") %>% 
   select(starts_with("ANPnC")) %>% 
+  mutate_all(scale, center = TRUE, scale = FALSE) %>% 
   as.matrix() %>% 
   prcomp()
-cell.neg.smpl.pca.x <- as.data.frame(cell.neg.smpl.pca$x)
-cell.neg.smpl.pca.x <- cell.neg.smpl.pca.x %>% 
+neg.smpl.pca.x <- as.data.frame(neg.smpl.pca$x)
+neg.smpl.pca.x <- neg.smpl.pca.x %>% 
   bind_cols(
-    cell.neg.noNA %>% 
+    neg.noNA %>% 
       filter(Group == "sample") %>% 
       select(Samples, Group:Experiment)
   )
-row.names(cell.neg.smpl.pca.x) <- cell.neg.smpl.pca.x$Samples
-cell.neg.smpl.pca.x %>% 
-  ggplot(aes(x = PC1, y = PC2, shape = Group, color = Treatment)) +
-  geom_point(size = 4, alpha = 0.8)
+row.names(neg.smpl.pca.x) <- neg.smpl.pca.x$Samples
+neg.smpl.pca.x %>% 
+  ggplot(aes(x = PC1, y = PC2, color = Treatment)) +
+  geom_point(size = 4, alpha = 0.8) +
+  xlab("PC1 (34.3% Var)") +
+  ylab("PC2 (23.8%)")
+neg.smpl.pca.x %>% 
+  ggplot(aes(x = PC3, y = PC4, color = Treatment)) +
+  geom_point(size = 4, alpha = 0.8) +
+  xlab("PC3 (16.6% Var)") +
+  ylab("PC4 (7.1%)")
+```
 
 
-### VPA Cells Positive Mode ###
-cell.pos.full.pca <- cell.pos.noNA %>% 
+### Postive Mode
+
+
+```{r exploratory_pca_pos, comment=NA}
+# All Samples #
+pos.full.pca <- pos.noNA %>% 
   select(starts_with("ANPpC")) %>% 
+  mutate_all(scale, center = TRUE, scale = FALSE) %>% 
   as.matrix() %>% 
   prcomp()
-cell.pos.full.pca.x <- as.data.frame(cell.pos.full.pca$x)
-row.names(cell.pos.full.pca.x) <- cell.pos.noNA$Samples
-cell.pos.full.pca.x <- cell.pos.full.pca.x %>% 
-  bind_cols(cell.pos.noNA %>% select(Group:Experiment))
-cell.pos.full.pca.x %>% 
+pos.full.pca.x <- as.data.frame(pos.full.pca$x)
+row.names(pos.full.pca.x) <- pos.noNA$Samples
+pos.full.pca.x <- pos.full.pca.x %>% 
+  bind_cols(pos.noNA %>% select(Group:Experiment))
+pos.full.pca.x %>% 
   ggplot(aes(x = PC1, y = PC2, color = Group)) +
-  geom_point(size = 2, alpha = 0.8)
-cell.pos.smpl.qc.pca <- cell.pos.noNA %>% 
-  filter(Group == "sample" | Group == "QC") %>% 
+  geom_point(size = 2, alpha = 0.8) +
+  xlab("PC1 (89.5% Var)") +
+  ylab("PC2 (4.5%)")
+
+# Experimental Samples Only #
+pos.smpl.pca <- pos.noNA %>% 
+  filter(Group == "sample") %>% 
   select(starts_with("ANPpC")) %>% 
+  mutate_all(scale, center = TRUE, scale = FALSE) %>% 
   as.matrix() %>% 
   prcomp()
-cell.pos.smpl.qc.pca.x <- as.data.frame(cell.pos.smpl.qc.pca$x)
-cell.pos.smpl.qc.pca.x <- cell.pos.smpl.qc.pca.x %>% 
+pos.smpl.pca.x <- as.data.frame(pos.smpl.pca$x)
+pos.smpl.pca.x <- pos.smpl.pca.x %>% 
   bind_cols(
-    cell.pos.noNA %>% 
-      filter(Group == "sample" | Group == "QC") %>% 
+    pos.noNA %>% 
+      filter(Group == "sample") %>% 
       select(Samples, Group:Experiment)
   )
-row.names(cell.pos.smpl.qc.pca.x) <- cell.pos.smpl.qc.pca.x$Samples
-cell.pos.smpl.qc.pca.x %>% 
-  ggplot(aes(x = PC1, y = PC2, shape = Group, color = Treatment)) +
-  geom_point(size = 4, alpha = 0.8)
+row.names(pos.smpl.pca.x) <- pos.smpl.pca.x$Samples
+pos.smpl.pca.x %>% 
+  ggplot(aes(x = PC1, y = PC2, color = Treatment)) +
+  geom_point(size = 4, alpha = 0.8) +
+  xlab("PC1 (57.5% Var)") +
+  ylab("PC2 (19.6%)")
+pos.smpl.pca.x %>% 
+  ggplot(aes(x = PC3, y = PC4, color = Treatment)) +
+  geom_point(size = 4, alpha = 0.8) +
+  xlab("PC3 (7.2% Var)") +
+  ylab("PC4 (4.7%)")
 ```
 
-# Statistical analysis
 
-## VPA metabolism
-
-Is VPA metabolised by cells? 
-
-```{r comment = NA}
-med.neg.noNA %>% 
-  select(Samples:Experiment, ANPnM24) %>% 
-  ggplot(aes(Group, ANPnM24)) +
-  geom_jitter(alpha = 0.8, width = 0.1)
-med.neg.noNA %>% 
-  select(Samples:Experiment, ANPnM24) %>% 
-  filter(Treatment == "drug") %>% 
-  group_by(Group) %>% 
-  summarize(
-    avg = mean(ANPnM24),
-    sd = sd(ANPnM24)
-    )
-```
-
-It seems likely that VPA is not getting metabolised to a great extent, but it is not possible to be sure.
+# Surrogate Variable Analsysis and Signifiance Testing using Limma
 
 
-# Signifiance Testing using Limma
-
-
-## Cells / Neg Mode
+## Negative Mode
 
 ```{r cell_neg_stat, comment=NA}
 # sample prep
-cell.neg.smpl.data <- cell.neg.noNA %>% 
+neg.smpl.data <- neg.noNA %>% 
     filter(Group == "sample")
-cell.neg.data.for.sva <- as.matrix(
-  cell.neg.smpl.data[, which(
-    colnames(cell.neg.smpl.data) == "ANPnC1"
-    ):ncol(cell.neg.smpl.data)]
+neg.data.for.sva <- as.matrix(
+  neg.smpl.data[, which(
+    colnames(neg.smpl.data) == "ANPnC1"
+    ):ncol(neg.smpl.data)]
   )
-row.names(cell.neg.data.for.sva) <- cell.neg.smpl.data$Samples
-cell.neg.data.for.sva <- t(cell.neg.data.for.sva)
+row.names(neg.data.for.sva) <- neg.smpl.data$Samples
+neg.data.for.sva <- t(neg.data.for.sva)
 # pheno prep
-cell.neg.data.pheno <- as.data.frame(cell.neg.smpl.data[, 4:6])
-row.names(cell.neg.data.pheno) <- cell.neg.smpl.data$Samples
+neg.data.pheno <- as.data.frame(neg.smpl.data[, 4:6])
+row.names(neg.data.pheno) <- neg.smpl.data$Samples
 # sva calculation
-cell.neg.mod.drug <- model.matrix(~ as.factor(Treatment), data = cell.neg.data.pheno)
-cell.neg.mod0 <- model.matrix(~ 1, data = cell.neg.data.pheno)
-cell.neg.sv <- sva(cell.neg.data.for.sva, cell.neg.mod.drug, cell.neg.mod0)
+neg.mod.drug <- model.matrix(~ as.factor(Treatment), data = neg.data.pheno)
+neg.mod0 <- model.matrix(~ 1, data = neg.data.pheno)
+neg.sv <- sva(neg.data.for.sva, neg.mod.drug, neg.mod0)
 
 # original method
-cell.neg.d <- model.matrix( ~ 0 + as.factor(Treatment), data = cell.neg.data.pheno)
-colnames(cell.neg.d) <- levels(as.factor(cell.neg.data.pheno$Treatment))
-cell.neg.d.sv <- cbind(cell.neg.d, cell.neg.sv$sv)
-colnames(cell.neg.d.sv)[3:5] <- c("S1", "S2", "S3")
+neg.d <- model.matrix( ~ 0 + as.factor(Treatment), data = neg.data.pheno)
+colnames(neg.d) <- levels(as.factor(neg.data.pheno$Treatment))
+neg.d.sv <- cbind(neg.d, neg.sv$sv)
+colnames(neg.d.sv)[3:5] <- c("S1", "S2", "S3")
 
-plot(cell.neg.smpl.pca.x$PC1, cell.neg.d.sv[, 3])
+plot(neg.smpl.pca.x$PC1, neg.d.sv[, 3])
 
 # method 1
-cell.neg.cont.mat <- makeContrasts("cntrl-drug", levels = c("cntrl", "drug", "S1", "S2", "S3"))
-row.names(cell.neg.cont.mat) <- NULL
-cell.neg.top.table <- lmFit(cell.neg.data.for.sva, cell.neg.d.sv) %>% 
-  contrasts.fit(cell.neg.cont.mat) %>% 
+neg.cont.mat <- makeContrasts("cntrl-drug", levels = c("cntrl", "drug", "S1", "S2", "S3"))
+row.names(neg.cont.mat) <- NULL
+neg.top.table <- lmFit(neg.data.for.sva, neg.d.sv) %>% 
+  contrasts.fit(neg.cont.mat) %>% 
   eBayes() %>% 
-  topTable(adjust = "bonferroni", p.value = 0.05, n = nrow(cell.neg.data.for.sva))
+  topTable(adjust = "bonferroni", p.value = 0.05, n = nrow(neg.data.for.sva))
   
 # method 2
-cell.neg.d.sv.test <- cbind(cell.neg.mod.drug, cell.neg.sv$sv)  
-colnames(cell.neg.d.sv.test) <- c("cntrl", "DRUGvsCNTRL", "S1", "S2", "S3")
-cell.neg.top.table.test <- lmFit(cell.neg.data.for.sva, cell.neg.d.sv.test) %>% 
+neg.d.sv.test <- cbind(neg.mod.drug, neg.sv$sv)  
+colnames(neg.d.sv.test) <- c("cntrl", "DRUGvsCNTRL", "S1", "S2", "S3")
+neg.top.table.test <- lmFit(neg.data.for.sva, neg.d.sv.test) %>% 
   eBayes() %>% 
-  topTable(coef = "DRUGvsCNTRL", adjust = "bonferroni", p.value = 0.05, n = nrow(cell.neg.data.for.sva))
+  topTable(coef = "DRUGvsCNTRL", adjust = "bonferroni", p.value = 0.05, n = nrow(neg.data.for.sva))
   
 
-cell.neg.top.w.info <- cell.neg.top.table.test %>% 
+neg.top.w.info <- neg.top.table.test %>% 
     rownames_to_column("compound_short") %>% 
     mutate(
       drug_div_cntrl = round(2 ^ logFC, 2),
@@ -733,32 +669,32 @@ cell.neg.top.w.info <- cell.neg.top.table.test %>%
       ) %>% 
     filter(drug_div_cntrl > 1.2 | drug_div_cntrl < 0.83) %>%  
     arrange(change_w_drug, desc(drug_div_cntrl))
-cell.neg.top.w.info %>% 
+neg.top.w.info %>% 
   select(compound_short, change_w_drug, drug_div_cntrl)
   
 ### Plotting ###
-  cell.neg.surr.var <- as.data.frame(cell.neg.sv$sv)
-  colnames(cell.neg.surr.var) <- c("S1", "S2", "S3")
-  cell.neg.gathered <- cell.neg.noNA %>%
+  neg.surr.var <- as.data.frame(neg.sv$sv)
+  colnames(neg.surr.var) <- c("S1", "S2", "S3")
+  neg.gathered <- neg.noNA %>%
     filter(Group == "sample") %>% 
-    bind_cols(cell.neg.surr.var) %>% 
+    bind_cols(neg.surr.var) %>% 
     select(Samples, Treatment, S1:S3, starts_with("ANPnC")) %>% 
     gather(key = "Compound", value = "Abundance", ANPnC1:ANPnC99)
-  cell.neg.nested <- cell.neg.gathered %>% 
+  neg.nested <- neg.gathered %>% 
     group_by(Compound) %>% 
     nest() %>% 
     mutate(model = map(data, ~lm(Abundance ~ S1 + S2 + S3, data = .))) %>% 
     mutate(augment_model = map(model, augment))
-  cell.neg.modSV.resid <- cell.neg.nested %>% 
+  neg.modSV.resid <- neg.nested %>% 
     unnest(data, augment_model) %>% 
     select(Samples, Treatment, Compound, .resid) %>% 
     spread(Compound, .resid) 
 ```  
 
 
-```{r fig.height = 15, fig.width = 12, include = FALSE}
-cell.neg.modSV.resid %>% 
-  select(Samples, one_of(cell.neg.top.w.info$compound_short)) %>% 
+```{r fig.height = 10, fig.width = 8}
+neg.modSV.resid %>% 
+  select(Samples, one_of(neg.top.w.info$compound_short)) %>% 
   HeatmapPrepAlt("ANPnC") %>% 
   t() %>% 
   heatmap(col = magma(10), scale = "none")
@@ -766,126 +702,47 @@ cell.neg.modSV.resid %>%
 
 
 ```{r fig.width = 8, fig.height=10}
-cell.neg.modSV.resid %>% 
-  select(Samples, one_of(cell.neg.top.w.info$compound_short)) %>% 
+neg.modSV.resid %>% 
+  select(Samples, one_of(neg.top.w.info$compound_short)) %>% 
   HeatmapPrepAlt("ANPnC") %>% 
   t() %>% 
   heatmaply(
     colors = viridis(n = 10, option = "magma"), 
     xlab = "Samples", ylab = "Compounds",
-    main = "Statistically significant compounds\nAfter Drug Treatment / Cells / Neg Mode",
+    main = "Statistically significant compounds\nAfter Drug Treatment / Neg Mode",
     margins = c(50, 50, 75, 30)
     )
 ``` 
 
- 
-## Media / Neg Mode
-
-
-```{r media_neg_stat, comment = NA}   
-# sample prep
-med.neg.smpl.data <- med.neg.noNA %>% 
-    filter(Group == "sample")
-med.neg.data.for.sva <- as.matrix(
-  med.neg.smpl.data[, which(
-    colnames(med.neg.smpl.data) == "ANPnM1"
-    ):ncol(med.neg.smpl.data)]
-  )
-row.names(med.neg.data.for.sva) <- med.neg.smpl.data$Samples
-med.neg.data.for.sva <- t(med.neg.data.for.sva)
-# pheno prep
-med.neg.data.pheno <- as.data.frame(med.neg.smpl.data[, 4:6])
-row.names(med.neg.data.pheno) <- med.neg.smpl.data$Samples
-# sva calculation
-med.neg.mod.drug <- model.matrix(~ as.factor(Treatment), data = med.neg.data.pheno)
-med.neg.mod0 <- model.matrix(~ 1, data = med.neg.data.pheno)
-med.neg.sv <- sva(med.neg.data.for.sva, med.neg.mod.drug, med.neg.mod0)
-med.neg.d.sv.test <- cbind(med.neg.mod.drug, med.neg.sv$sv)  
-colnames(med.neg.d.sv.test) <- c("cntrl", "VPAvsCNTRL", "S1")
-med.neg.top.table.test <- lmFit(med.neg.data.for.sva, med.neg.d.sv.test) %>% 
-  eBayes() %>% 
-  topTable(coef = "VPAvsCNTRL", adjust = "bonferroni", p.value = 0.05, n = nrow(med.neg.data.for.sva))
-med.neg.top.w.info <- med.neg.top.table.test %>% 
-    rownames_to_column("compound_short") %>% 
-    mutate(
-      drug_div_cntrl = round(2 ^ logFC, 2),
-      change_w_drug = ifelse(drug_div_cntrl < 1, "down", "up")
-      ) %>% 
-    filter(drug_div_cntrl > 1.2 | drug_div_cntrl < 0.83) %>%  
-    arrange(change_w_drug, desc(drug_div_cntrl))
-med.neg.top.w.info %>% 
-   select(compound_short, change_w_drug, drug_div_cntrl)
   
-### Plotting ###
-  med.neg.surr.var <- as.data.frame(med.neg.sv$sv)
-  colnames(med.neg.surr.var) <- c("S1")
-  med.neg.gathered <- med.neg.noNA %>%
-    filter(Group == "sample") %>% 
-    bind_cols(med.neg.surr.var) %>% 
-    select(Samples, Treatment, S1, starts_with("ANPnM")) %>% 
-    gather(key = "Compound", value = "Abundance", ANPnM1:ANPnM54)
-  med.neg.nested <- med.neg.gathered %>% 
-    group_by(Compound) %>% 
-    nest() %>% 
-    mutate(model = map(data, ~lm(Abundance ~ S1, data = .))) %>% 
-    mutate(augment_model = map(model, augment))
-  med.neg.modSV.resid <- med.neg.nested %>% 
-    unnest(data, augment_model) %>% 
-    select(Samples, Treatment, Compound, .resid) %>% 
-    spread(Compound, .resid) %>% 
-    select(Samples:Treatment, one_of(med.neg.top.w.info$compound_short))
-```
-
-```{r include = FALSE}
-med.neg.modSV.resid %>% 
-  select(Samples, starts_with("ANPnM")) %>% 
-  HeatmapPrepAlt("ANPnM") %>% 
-  t() %>% 
-  heatmap(col = magma(10), scale = "none")
-```
- 
-```{r fig.width = 8}
-med.neg.modSV.resid %>% 
-  select(Samples, starts_with("ANPnM")) %>% 
-  HeatmapPrepAlt("ANPnM") %>% 
-  t() %>% 
-  heatmaply(
-    colors = viridis(n = 10, option = "magma"), 
-    xlab = "Samples", ylab = "Compounds",
-    main = "Statistically significant compounds\nDrug Treatment / Media / Neg Mode",
-    margins = c(50, 50, 75, 30)
-    )
-```
-  
-
-## Cells / Pos Mode
+## Positive Mode
 
 
 ```{r cell_pos_stat, comment = NA}
 # sample prep
-cell.pos.smpl.data <- cell.pos.noNA %>% 
+pos.smpl.data <- pos.noNA %>% 
     filter(Group == "sample")
-cell.pos.data.for.sva <- as.matrix(
-  cell.pos.smpl.data[, which(
-    colnames(cell.pos.smpl.data) == "ANPpC1"
-    ):ncol(cell.pos.smpl.data)]
+pos.data.for.sva <- as.matrix(
+  pos.smpl.data[, which(
+    colnames(pos.smpl.data) == "ANPpC1"
+    ):ncol(pos.smpl.data)]
   )
-row.names(cell.pos.data.for.sva) <- cell.pos.smpl.data$Samples
-cell.pos.data.for.sva <- t(cell.pos.data.for.sva)
+row.names(pos.data.for.sva) <- pos.smpl.data$Samples
+pos.data.for.sva <- t(pos.data.for.sva)
 # pheno prep
-cell.pos.data.pheno <- as.data.frame(cell.pos.smpl.data[, 4:6])
-row.names(cell.pos.data.pheno) <- cell.pos.smpl.data$Samples
+pos.data.pheno <- as.data.frame(pos.smpl.data[, 4:6])
+row.names(pos.data.pheno) <- pos.smpl.data$Samples
 # sva calculation
-cell.pos.mod.drug <- model.matrix(~ as.factor(Treatment), data = cell.pos.data.pheno)
-cell.pos.mod0 <- model.matrix(~ 1, data = cell.pos.data.pheno)
-cell.pos.sv <- sva(cell.pos.data.for.sva, cell.pos.mod.drug, cell.pos.mod0)
+pos.mod.drug <- model.matrix(~ as.factor(Treatment), data = pos.data.pheno)
+pos.mod0 <- model.matrix(~ 1, data = pos.data.pheno)
+pos.sv <- sva(pos.data.for.sva, pos.mod.drug, pos.mod0)
 # method 2
-cell.pos.d.sv.test <- cbind(cell.pos.mod.drug, cell.pos.sv$sv)  
-colnames(cell.pos.d.sv.test) <- c("cntrl", "DRUGvsCNTRL", "S1", "S2")
-cell.pos.top.table.test <- lmFit(cell.pos.data.for.sva, cell.pos.d.sv.test) %>% 
+pos.d.sv.test <- cbind(pos.mod.drug, pos.sv$sv)  
+colnames(pos.d.sv.test) <- c("cntrl", "DRUGvsCNTRL", "S1", "S2")
+pos.top.table.test <- lmFit(pos.data.for.sva, pos.d.sv.test) %>% 
   eBayes() %>% 
-  topTable(coef = "DRUGvsCNTRL", adjust = "bonferroni", p.value = 0.05, n = nrow(cell.pos.data.for.sva))
-cell.pos.top.w.info <- cell.pos.top.table.test %>% 
+  topTable(coef = "DRUGvsCNTRL", adjust = "bonferroni", p.value = 0.05, n = nrow(pos.data.for.sva))
+pos.top.w.info <- pos.top.table.test %>% 
     rownames_to_column("compound_short") %>% 
     mutate(
       drug_div_cntrl = round(2 ^ logFC, 2),
@@ -893,39 +750,39 @@ cell.pos.top.w.info <- cell.pos.top.table.test %>%
       ) %>% 
     filter(drug_div_cntrl > 1.2 | drug_div_cntrl < 0.83) %>%  
     arrange(change_w_drug, desc(drug_div_cntrl))
-cell.pos.top.w.info %>% 
+pos.top.w.info %>% 
   select(compound_short, change_w_drug, drug_div_cntrl)
   
 ### Plotting ###
-  cell.pos.surr.var <- as.data.frame(cell.pos.sv$sv)
-  colnames(cell.pos.surr.var) <- c("S1", "S2")
-  cell.pos.gathered <- cell.pos.noNA %>%
+  pos.surr.var <- as.data.frame(pos.sv$sv)
+  colnames(pos.surr.var) <- c("S1", "S2")
+  pos.gathered <- pos.noNA %>%
     filter(Group == "sample") %>% 
-    bind_cols(cell.pos.surr.var) %>% 
+    bind_cols(pos.surr.var) %>% 
     select(Samples, Treatment, S1:S2, starts_with("ANPpC")) %>% 
     gather(key = "Compound", value = "Abundance", ANPpC1:ANPpC98)
-  cell.pos.nested <- cell.pos.gathered %>% 
+  pos.nested <- pos.gathered %>% 
     group_by(Compound) %>% 
     nest() %>% 
     mutate(model = map(data, ~lm(Abundance ~ S1 + S2, data = .))) %>% 
     mutate(augment_model = map(model, augment))
-  cell.pos.modSV.resid <- cell.pos.nested %>% 
+  pos.modSV.resid <- pos.nested %>% 
     unnest(data, augment_model) %>% 
     select(Samples, Treatment, Compound, .resid) %>% 
     spread(Compound, .resid)
 ```
 
-```{r include = FALSE}
-cell.pos.modSV.resid %>% 
-  select(Samples, one_of(cell.pos.top.w.info$compound_short)) %>% 
+```{r fig.width = 8, fig.height=10}
+pos.modSV.resid %>% 
+  select(Samples, one_of(pos.top.w.info$compound_short)) %>% 
   HeatmapPrepAlt("ANPpC") %>% 
   t() %>% 
   heatmap(col = magma(10), scale = "none")
 ```
 
 ```{r fig.width = 8, fig.height=10}
-cell.pos.modSV.resid %>% 
-  select(Samples, one_of(cell.pos.top.w.info$compound_short)) %>% 
+pos.modSV.resid %>% 
+  select(Samples, one_of(pos.top.w.info$compound_short)) %>% 
     HeatmapPrepAlt("ANPpC") %>% 
     t() %>% 
     heatmaply(
@@ -936,35 +793,4 @@ cell.pos.modSV.resid %>%
       )
 ```
   
-
-## Media / Pos Mode  
-  
-  
-```{r vpa_media_pos_stat, comment=NA}
-med.pos.smpl.data <- med.pos.noNA %>% 
-    filter(Group == "sample")
-med.pos.data.for.sva <- as.matrix(
-  med.pos.smpl.data[, which(
-    colnames(med.pos.smpl.data) == "ANPpM1"
-    ):ncol(med.pos.smpl.data)]
-  )
-row.names(med.pos.data.for.sva) <- med.pos.smpl.data$Samples
-med.pos.data.for.sva <- t(med.pos.data.for.sva)
-# pheno prep
-med.pos.data.pheno <- as.data.frame(med.pos.smpl.data[, 4:6])
-row.names(med.pos.data.pheno) <- med.pos.smpl.data$Samples
-# sva calculation
-med.pos.mod.drug <- model.matrix(~ as.factor(Treatment), data = med.pos.data.pheno)
-med.pos.mod0 <- model.matrix(~ 1, data = med.pos.data.pheno)
-med.pos.sv <- sva(med.pos.data.for.sva, med.pos.mod.drug, med.pos.mod0)
-  
-# method 2
-med.pos.d.sv.test <- cbind(med.pos.mod.drug, med.pos.sv$sv)  
-colnames(med.pos.d.sv.test) <- c("cntrl", "DRUGvsCNTRL", "S1")
-med.pos.top.table.test <- lmFit(med.pos.data.for.sva, med.pos.d.sv.test) %>% 
-  eBayes() %>% 
-  topTable(coef = "DRUGvsCNTRL", adjust = "bonferroni", p.value = 0.05, n = nrow(med.pos.data.for.sva))
-dim(med.pos.top.table.test)
-```
-
-# Pathway analysis
+# Interpretation
