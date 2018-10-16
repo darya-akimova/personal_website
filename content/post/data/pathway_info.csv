@@ -1,0 +1,36 @@
+compound_full,compound_short,Name,Pathway
+D-Glucose 6-phosphate,ANPnC136,Glucose 6-phosphate,PPP
+D-Ribose,ANPpC49,Ribose,PPP
+Deoxyribose,ANPnC46,Deoxyribose,PPP
+G3P,ANPnC86,Glyceraldehyde 3-phosphate (Neg),PPP
+G3P,ANPpC67,Glyceraldehyde 3-phosphate (Pos),PPP
+Ribose 5-Phosphate,ANPnC127,Ribose 5-Phosphate,PPP
+Sedoheptulose 7-phosphate,ANPnC148,Sedoheptulose 7-phosphate,PPP
+Adenine,ANPnC48,Adenine (Neg),Purine
+Adenine,ANPpC38,Adenine (Pos),Purine
+ADP,ANPpC134,ADP,Purine
+AMP,ANPnC168,AMP,Purine
+Aspartic Acid,ANPnC44,Aspartic Acid (Neg),Purine
+Aspartic Acid,ANPpC37,Aspartic Acid (Pos),Purine
+Glycine,ANPnC2,Glycine,Purine
+GMP,ANPnC169,GMP,Purine
+Hypoxanthine,ANPpC39,Hypoxanthine,Purine
+Inosine,ANPnC138,Inosine (Neg),Purine
+Inosine,ANPpC107,Inosine (Pos),Purine
+Ribose 5-Phosphate,ANPnC127,Ribose 5-Phosphate,Purine
+Succinoadenosine,ANPnC172,Succinoadenosine,Purine
+Xanthine,ANPnC65,Xanthine (Neg),Purine
+Xanthine,ANPpC51,Xanthine (Pos),Purine
+Xanthosine,ANPnC144,Xanthosine (Neg),Purine
+Xanthosine,ANPpC112,Xanthosine (Pos),Purine
+Aspartic Acid,ANPnC44,Aspartic Acid (Neg),Pyrimidine
+Aspartic Acid,ANPpC37,Aspartic Acid (Pos),Pyrimidine
+CMP,ANPnC159,CMP (Neg),Pyrimidine
+CMP,ANPpC119,CMP (Pos),Pyrimidine
+CTP,ANPnC189,CTP (Neg),Pyrimidine
+dTDP,ANPnC176,dTDP,Pyrimidine
+Ribose 5-Phosphate,ANPnC127,Ribose 5-Phosphate,Pyrimidine
+UMP,ANPnC160,UMP (Neg),Pyrimidine
+UMP,ANPpC120,UMP (Pos),Pyrimidine
+Uracil,ANPpC14,Uracil,Pyrimidine
+Uridine,ANPpC95,Uridine,Pyrimidine

@@ -18,7 +18,7 @@
       <pubDate>Fri, 05 Oct 2018 00:00:00 +0000</pubDate>
       
       <guid>/post/effect-of-drug-treatment-on-cellular-metabolism-targeted-lc-ms-metabolomics-analysis/</guid>
-      <description>IntroductionSetupPackages:Data:Abundances:Functions:Exploratory AnalysisNA per sample and per compoundEmpty/Solv vs Sample FilesBackgroundNegative ModePositive ModeData prep and prelim analysisNA replacement and log transformDistribution plots:NegativePositiveExploratory PCABackgroundNegative ModePostive ModeSurrogate Variable Analsysis and Signifiance Testing using LimmaNegative ModePositive ModeInterpretationIntroductionThis project is a walkthrough of a metabolomics analysis project that involves:</description>
+      <description>IntroductionSetupPackages:Data:Functions:Data ExplorationMissing ValuesNegative Controls and Compound EliminationBackgroundNegative ModePositive ModeData prep and preliminary analysisCleanupDistribution plots:NegativePositivePrincipal Component AnalysisBackgroundNegative ModePostive ModeSurrogate Variable Analsysis and Signifiance TestingNegative ModeSurrogate variable analysisSignificance TestingPositive ModeInterpretationNucleotide metabolism plotsIntroductionMetabolomics is one of the many “omics” scientific fields that have sprung up over the past years and can be broadly summarized as the study of the chemical composition of cells, tissues, and biofluids.</description>
     </item>
     
   </channel>
