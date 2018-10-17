@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Personal Website</title>
+    <title>A Data Analysis Portfolio</title>
     <link>/</link>
-    <description>Recent content on Personal Website</description>
+    <description>Recent content on A Data Analysis Portfolio</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>&amp;copy; 2018. All rights reserved.</copyright>
@@ -18,7 +18,7 @@
       <pubDate>Fri, 05 Oct 2018 00:00:00 +0000</pubDate>
       
       <guid>/post/effect-of-drug-treatment-on-cellular-metabolism-targeted-lc-ms-metabolomics-analysis/</guid>
-      <description>IntroductionSetupPackages:Data:Functions:Data ExplorationMissing ValuesNegative Controls and Compound EliminationBackgroundNegative ModePositive ModeData prep and preliminary analysisCleanupDistribution plots:NegativePositivePrincipal Component AnalysisBackgroundNegative ModePostive ModeSurrogate Variable Analsysis and Signifiance TestingNegative ModeSurrogate variable analysisSignificance TestingPositive ModeInterpretationNucleotide metabolism plotsIntroductionMetabolomics is one of the many “omics” scientific fields that have sprung up over the past years and can be broadly summarized as the study of the chemical composition of cells, tissues, and biofluids.</description>
+      <description>IntroductionSetupPackagesDataFunctionsData ExplorationMissing ValuesNegative Controls and Compound EliminationBackgroundNegative ModePositive ModeData Prep and Preliminary AnalysisCleanupDistribution PlotsNegative ModePositive ModePrincipal Component AnalysisBackgroundNegative ModePostive ModeBatch Effects and Signifiance TestingNegative ModeSurrogate variable analysisSignificance TestingPositive ModeInterpretationNucleotide MetabolismSession InfoIntroductionMetabolomics is one of the many “omics” scientific fields that have sprung up over the past years and can be broadly summarized as the study of the chemical composition of cells, tissues, and biofluids.</description>
     </item>
     
     <item>

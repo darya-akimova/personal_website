@@ -1,6 +1,6 @@
 baseurl = "https://www.dakimova.com/"
 languageCode = "en-us"
-title = "Personal Website"
+title = "A Data Analysis Portfolio"
 theme = "blackburn"
 author = "Darya Akimova"
 copyright = "&copy; 2018. All rights reserved."
@@ -14,8 +14,8 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 
 [params]
   # Shown in the home page
-  subtitle = "A Data Science Portfolio"
-  brand = "Darya Akimova"
+  subtitle = "A Data Analysis Portfolio"
+  brand = "Test"
   #googleAnalytics = "Your Google Analytics tracking ID"
   #disqus = "Your Disqus shortname"
   # CSS name for highlight.js
@@ -47,6 +47,6 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 [social]
   # Link your social networking accouns to the side menu
   # by entering your username or ID.
-  twitter = "*"
+  twitter = "dasha_akimova"
   github = "phosphofructo"
   linkedin = "darya-akimova-b45066a2"
