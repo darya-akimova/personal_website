@@ -1,6 +1,6 @@
 baseurl = "https://www.dakimova.com/"
 languageCode = "en-us"
-title = "A Data Analysis Portfolio"
+title = "All in the Dose"
 theme = "blackburn"
 author = "Darya Akimova"
 copyright = "&copy; 2018. All rights reserved."
@@ -14,7 +14,7 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
 
 [params]
   # Shown in the home page
-  subtitle = "Darya Akimova"
+  subtitle = "A Personal Website by Darya Akimova"
   brand = "Navigation"
   #googleAnalytics = "Your Google Analytics tracking ID"
   #disqus = "Your Disqus shortname"
