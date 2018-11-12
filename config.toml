@@ -20,7 +20,7 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
   #disqus = "Your Disqus shortname"
   # CSS name for highlight.js
   #highlightjs = "androidstudio"
-  dateFormat = "02 Jan 2006"
+  dateFormat = "Jan 2006"
 
 [menu]
   # Shown in the side menu.
@@ -48,5 +48,5 @@ ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_files$", "_cache$"]
   # Link your social networking accouns to the side menu
   # by entering your username or ID.
   twitter = "dasha_akimova"
-  github = "phosphofructo"
+  github = "darya-akimova"
   linkedin = "darya-akimova-b45066a2"
