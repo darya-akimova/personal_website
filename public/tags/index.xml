@@ -1,16 +1,25 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>Tags on A Data Analysis Portfolio</title>
+    <title>Tags on All in the Dose</title>
     <link>/tags/</link>
-    <description>Recent content in Tags on A Data Analysis Portfolio</description>
+    <description>Recent content in Tags on All in the Dose</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>&amp;copy; 2018. All rights reserved.</copyright>
-    <lastBuildDate>Fri, 05 Oct 2018 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Fri, 29 Mar 2019 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/tags/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>Data Wrangling</title>
+      <link>/tags/data-wrangling/</link>
+      <pubDate>Fri, 29 Mar 2019 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/data-wrangling/</guid>
+      <description></description>
+    </item>
     
     <item>
       <title>Exploratory Analysis</title>
@@ -18,6 +27,15 @@
       <pubDate>Fri, 05 Oct 2018 00:00:00 +0000</pubDate>
       
       <guid>/tags/exploratory-analysis/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Geospatial</title>
+      <link>/tags/geospatial/</link>
+      <pubDate>Fri, 29 Mar 2019 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/geospatial/</guid>
       <description></description>
     </item>
     

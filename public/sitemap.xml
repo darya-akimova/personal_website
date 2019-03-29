@@ -3,6 +3,11 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
+    <loc>/post/the-inaccessible-subway-a-geospatial-analysis-of-the-nyc-subway-in-r/</loc>
+    <lastmod>2019-03-29T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
     <loc>/post/effect-of-drug-treatment-on-cellular-metabolism-targeted-lc-ms-metabolomics-analysis/</loc>
     <lastmod>2018-10-05T00:00:00+00:00</lastmod>
   </url>
@@ -14,13 +19,25 @@
   
   <url>
     <loc>/</loc>
-    <lastmod>2018-10-05T00:00:00+00:00</lastmod>
+    <lastmod>2019-03-29T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/tags/data-wrangling/</loc>
+    <lastmod>2019-03-29T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>/tags/exploratory-analysis/</loc>
     <lastmod>2018-10-05T00:00:00+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/tags/geospatial/</loc>
+    <lastmod>2019-03-29T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
@@ -32,13 +49,13 @@
   
   <url>
     <loc>/post/</loc>
-    <lastmod>2018-10-05T00:00:00+00:00</lastmod>
+    <lastmod>2019-03-29T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>/tags/</loc>
-    <lastmod>2018-10-05T00:00:00+00:00</lastmod>
+    <lastmod>2019-03-29T00:00:00+00:00</lastmod>
     <priority>0</priority>
   </url>
   

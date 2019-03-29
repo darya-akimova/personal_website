@@ -1,16 +1,25 @@
 <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
-    <title>A Data Analysis Portfolio</title>
+    <title>All in the Dose</title>
     <link>/</link>
-    <description>Recent content on A Data Analysis Portfolio</description>
+    <description>Recent content on All in the Dose</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
     <copyright>&amp;copy; 2018. All rights reserved.</copyright>
-    <lastBuildDate>Fri, 05 Oct 2018 00:00:00 +0000</lastBuildDate>
+    <lastBuildDate>Fri, 29 Mar 2019 00:00:00 +0000</lastBuildDate>
     
 	<atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     
+    
+    <item>
+      <title>The Inaccessible Subway: A Geospatial Analysis of the NYC Subway in R</title>
+      <link>/post/the-inaccessible-subway-a-geospatial-analysis-of-the-nyc-subway-in-r/</link>
+      <pubDate>Fri, 29 Mar 2019 00:00:00 +0000</pubDate>
+      
+      <guid>/post/the-inaccessible-subway-a-geospatial-analysis-of-the-nyc-subway-in-r/</guid>
+      <description>IntroductionBackgroundProject goalsGoalsProblems with report and potential solutionsProject focusSetupPackagesDataData previewPreliminary exploration and cleaningFirst cleaningEntrance analysisRemoving entrance info and more tidyingTrouble aheadADA fixes and hitting a wallManual data cleaningReasoning and ResourcesBy lowest number of stationsShuttlesG trainZ train7 trainE trainL trainB train4 trainBy primary trunk lineJ trainA trainC train5 train6 trainD trainF trainM train1 train2 train3 trainR trainN trainW trainQ trainAnalysis and VisualizationBy RouteBy BoroughBy NeighborhoodCensus tract buffer analysisConclusionSession InfoIntroductionBackgroundThe initial inspiration for this work was the Data for Democracy NYC Accessibility project (Project GitHub Repo), which focused on exploring the lack of ADA-accessible stations in the New York City subway system.</description>
+    </item>
     
     <item>
       <title>Effect of drug treatment on cellular metabolism (targeted LC/MS metabolomics analysis)</title>
@@ -27,8 +36,8 @@
       <pubDate>Thu, 04 Oct 2018 00:00:00 +0000</pubDate>
       
       <guid>/about/</guid>
-      <description>Setup Hello! I&amp;rsquo;m Darya Akimova, a PhD student in Pharmacology at the Weill Cornell Graduate School of Medical Sciences.
-My research focuses on applying LC/MS metabolomics to the study of folate-resistant neural tube defects, and the potential role of small-molecule metabolism in the development of birth defects. As I&amp;rsquo;ve learned R and transitioned more into the computational side of metabolomics, I became more interested in bioinformatics and data analysis in general.</description>
+      <description>Hello! I&amp;rsquo;m Darya Akimova, a PhD student in Pharmacology at the Weill Cornell Graduate School of Medical Sciences.
+My research focuses on applying LC/MS metabolomics to the study of folate-resistant neural tube defects, and the potential role of small-molecule metabolism in the development of birth defects. As I&amp;rsquo;ve learned R and transitioned more into the computational side of metabolomics, I became more interested in bioinformatics and data analysis in general. This website was created using the R package blogdown in order to share some of my work.</description>
     </item>
     
   </channel>
