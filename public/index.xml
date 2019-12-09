@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>All in the Dose</title>
@@ -36,8 +36,8 @@
       <pubDate>Thu, 04 Oct 2018 00:00:00 +0000</pubDate>
       
       <guid>/about/</guid>
-      <description>Hello! I&amp;rsquo;m Darya Akimova, a PhD student in Pharmacology at the Weill Cornell Graduate School of Medical Sciences.
-My research focuses on applying LC/MS metabolomics to the study of folate-resistant neural tube defects, and the potential role of small-molecule metabolism in the development of birth defects. As I&amp;rsquo;ve learned R and transitioned more into the computational side of metabolomics, I became more interested in bioinformatics and data analysis in general. This website was created using the R package blogdown in order to share some of my work.</description>
+      <description>Hello! I&#39;m Darya Akimova, a PhD student in Pharmacology at the Weill Cornell Graduate School of Medical Sciences.
+My research focuses on applying LC/MS metabolomics to the study of folate-resistant neural tube defects, and the potential role of small-molecule metabolism in the development of birth defects. As I&#39;ve learned R and transitioned more into the computational side of metabolomics, I became more interested in bioinformatics and data analysis in general. This website was created using the R package blogdown in order to share some of my work.</description>
     </item>
     
   </channel>

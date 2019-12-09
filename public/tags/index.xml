@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Tags on All in the Dose</title>
@@ -13,7 +13,7 @@
     
     
     <item>
-      <title>Data Wrangling</title>
+      <title>data wrangling</title>
       <link>/tags/data-wrangling/</link>
       <pubDate>Fri, 29 Mar 2019 00:00:00 +0000</pubDate>
       
@@ -22,16 +22,7 @@
     </item>
     
     <item>
-      <title>Exploratory Analysis</title>
-      <link>/tags/exploratory-analysis/</link>
-      <pubDate>Fri, 05 Oct 2018 00:00:00 +0000</pubDate>
-      
-      <guid>/tags/exploratory-analysis/</guid>
-      <description></description>
-    </item>
-    
-    <item>
-      <title>Geospatial</title>
+      <title>geospatial</title>
       <link>/tags/geospatial/</link>
       <pubDate>Fri, 29 Mar 2019 00:00:00 +0000</pubDate>
       
@@ -40,7 +31,16 @@
     </item>
     
     <item>
-      <title>Linear Regression</title>
+      <title>exploratory analysis</title>
+      <link>/tags/exploratory-analysis/</link>
+      <pubDate>Fri, 05 Oct 2018 00:00:00 +0000</pubDate>
+      
+      <guid>/tags/exploratory-analysis/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>linear regression</title>
       <link>/tags/linear-regression/</link>
       <pubDate>Fri, 05 Oct 2018 00:00:00 +0000</pubDate>
       
